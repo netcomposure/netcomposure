@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 const EVENT_POOL = [
   { level: "INFO", text: "auth.session.created  user=8f2e...c1" },
@@ -63,7 +64,7 @@ function NavBar() {
     <header className="border-b border-line">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         <div className="flex items-center gap-2">
-          <span className="h-6 w-6 rounded-md bg-brand" />
+          <Image src="/logo.png" alt="Net Composure logo" width={28} height={28} />
           <span className="font-display text-lg font-medium">Net Composure</span>
         </div>
         <nav className="hidden gap-8 text-sm text-muted md:flex">
