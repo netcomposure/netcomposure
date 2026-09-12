@@ -32,7 +32,6 @@ function maskKey(key: string): string {
 export default function DashboardPage() {
   const router = useRouter();
   const [checking, setChecking] = useState(true);
-  const [email, setEmail] = useState<string | null>(null);
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [keysByProject, setKeysByProject] = useState<Record<string, ApiKey[]>>({});
@@ -47,7 +46,6 @@ export default function DashboardPage() {
         router.replace("/login");
         return;
       }
-      setEmail(data.session.user.email ?? null);
       setChecking(false);
       await loadProjects();
     });
@@ -124,29 +122,16 @@ export default function DashboardPage() {
     await loadProjects();
   }
 
-  async function handleLogout() {
-    await supabase.auth.signOut();
-    router.replace("/login");
-  }
-
   if (checking) {
     return null;
   }
 
   return (
-    <main className="mx-auto max-w-4xl px-6 py-16">
-      <div className="flex items-center justify-between">
-        <h1 className="font-display text-2xl font-medium">Dashboard</h1>
-        <button
-          onClick={handleLogout}
-          className="rounded-md border border-line px-4 py-2 text-sm text-text hover:border-white/20"
-        >
-          Log out
-        </button>
-      </div>
-      <p className="mt-1 text-sm text-muted">Logged in as {email}</p>
+    <div>
+      <h1 className="font-display text-2xl font-medium">Overview</h1>
+      <p className="mt-1 text-sm text-muted">Your projects and API keys.</p>
 
-      <section className="mt-10 rounded-lg border border-line bg-panel p-6">
+      <section className="mt-8 rounded-lg border border-line bg-panel p-6">
         <h2 className="font-display text-lg font-medium">Create a project</h2>
         <form onSubmit={handleCreateProject} className="mt-4 flex gap-3">
           <input
@@ -227,6 +212,6 @@ export default function DashboardPage() {
           })}
         </div>
       </section>
-    </main>
+    </div>
   );
 }
