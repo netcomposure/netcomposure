@@ -29,6 +29,13 @@ type Finding = {
   created_at: string;
 };
 
+type BlockedIp = {
+  id: string;
+  ip: string;
+  reason: string | null;
+  created_at: string;
+};
+
 function generateApiKey(): string {
   const bytes = new Uint8Array(24);
   crypto.getRandomValues(bytes);
@@ -57,6 +64,7 @@ export default function ProjectDetailPage() {
   const [project, setProject] = useState<Project | null>(null);
   const [keys, setKeys] = useState<ApiKey[]>([]);
   const [findings, setFindings] = useState<Finding[]>([]);
+  const [blockedIps, setBlockedIps] = useState<BlockedIp[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [revealedKey, setRevealedKey] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
@@ -111,6 +119,17 @@ export default function ProjectDetailPage() {
     }
 
     setFindings(findingRows ?? []);
+
+    const { data: blockedRows, error: blockedError } = await supabase
+      .from("blocked_ips")
+      .select("id, ip, reason, created_at")
+      .eq("project_id", projectId)
+      .order("created_at", { ascending: false });
+
+    if (!blockedError) {
+      setBlockedIps(blockedRows ?? []);
+    }
+
     setLoading(false);
   }
 
@@ -234,6 +253,45 @@ export default function ProjectDetailPage() {
                   Revoke
                 </button>
               )}
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="mt-10 rounded-lg border border-line bg-panel p-6">
+        <div className="flex items-center justify-between">
+          <h2 className="font-display text-lg font-medium">Active Defense</h2>
+          <span className="rounded-full border border-brand/40 px-3 py-1 text-xs text-brand">
+            {blockedIps.length} blocked
+          </span>
+        </div>
+        <p className="mt-1 text-sm text-muted">
+          IPs automatically blocked after matching an attack pattern or
+          repeated failed logins.
+        </p>
+
+        {blockedIps.length === 0 && (
+          <p className="mt-4 text-sm text-muted">
+            No blocked IPs yet — this list fills in automatically as your
+            app sends requests through Net Composure.
+          </p>
+        )}
+
+        <ul className="mt-4 flex flex-col gap-2">
+          {blockedIps.map((b) => (
+            <li
+              key={b.id}
+              className="flex items-center justify-between rounded-md border border-line px-4 py-3"
+            >
+              <div>
+                <p className="font-mono text-sm">{b.ip}</p>
+                {b.reason && (
+                  <p className="mt-1 text-xs text-muted">{b.reason}</p>
+                )}
+              </div>
+              <span className="text-xs text-muted">
+                {new Date(b.created_at).toLocaleString()}
+              </span>
             </li>
           ))}
         </ul>
