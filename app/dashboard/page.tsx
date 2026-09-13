@@ -3,12 +3,14 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { FolderKanban, KeyRound, ShieldAlert, Sparkles } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 
 type Project = {
   id: string;
   name: string;
   created_at: string;
+  plan: string;
 };
 
 type ApiKey = {
@@ -42,7 +44,7 @@ export default function DashboardPage() {
   async function loadProjects() {
     const { data: projectRows, error: projectError } = await supabase
       .from("projects")
-      .select("id, name, created_at")
+      .select("id, name, created_at, plan")
       .order("created_at", { ascending: false });
 
     if (projectError) {
@@ -112,17 +114,32 @@ export default function DashboardPage() {
       <p className="mt-1 text-sm text-muted">Your projects and API keys.</p>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-3">
-        <div className="log-line rounded-lg border border-line bg-panel p-5">
-          <p className="text-xs text-muted">Projects</p>
-          <p className="mt-1 font-display text-2xl font-medium">{projects.length}</p>
+        <div className="rounded-lg border border-line bg-panel p-5">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-muted">Projects</p>
+            <FolderKanban className="h-4 w-4 text-muted" />
+          </div>
+          <p className="mt-2 font-display text-2xl font-medium">
+            {projects.length}
+          </p>
         </div>
-        <div className="log-line rounded-lg border border-line bg-panel p-5">
-          <p className="text-xs text-muted">Active API keys</p>
-          <p className="mt-1 font-display text-2xl font-medium">{activeKeys}</p>
+        <div className="rounded-lg border border-line bg-panel p-5">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-muted">Active API keys</p>
+            <KeyRound className="h-4 w-4 text-muted" />
+          </div>
+          <p className="mt-2 font-display text-2xl font-medium">
+            {activeKeys}
+          </p>
         </div>
-        <div className="log-line rounded-lg border border-line bg-panel p-5">
-          <p className="text-xs text-muted">Findings</p>
-          <p className="mt-1 font-display text-2xl font-medium">{findingsCount}</p>
+        <div className="rounded-lg border border-line bg-panel p-5">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-muted">Findings</p>
+            <ShieldAlert className="h-4 w-4 text-muted" />
+          </div>
+          <p className="mt-2 font-display text-2xl font-medium">
+            {findingsCount}
+          </p>
         </div>
       </div>
 
@@ -156,25 +173,40 @@ export default function DashboardPage() {
           </p>
         )}
 
-        <div className="mt-4 flex flex-col gap-3">
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
           {projects.map((project) => {
             const keys = keysByProject[project.id] ?? [];
             const activeCount = keys.filter((k) => !k.revoked).length;
+            const isPremium = project.plan === "premium";
             return (
               <Link
                 key={project.id}
                 href={`/dashboard/projects/${project.id}`}
-                className="flex items-center justify-between rounded-lg border border-line bg-panel p-6 transition-colors hover:border-brand/40"
+                className="group flex flex-col justify-between rounded-lg border border-line bg-panel p-5 transition-colors hover:border-brand/40"
               >
                 <div>
-                  <h3 className="font-display text-base font-medium">
-                    {project.name}
-                  </h3>
-                  <p className="mt-1 text-xs text-muted">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-display text-base font-medium">
+                      {project.name}
+                    </h3>
+                    <span
+                      className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wide ${
+                        isPremium
+                          ? "border-brand/40 text-brand"
+                          : "border-line text-muted"
+                      }`}
+                    >
+                      {isPremium && <Sparkles className="h-2.5 w-2.5" />}
+                      {isPremium ? "Premium" : "Free"}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-xs text-muted">
                     {activeCount} active key{activeCount === 1 ? "" : "s"}
                   </p>
                 </div>
-                <span className="text-sm text-muted">→</span>
+                <p className="mt-4 text-xs text-muted group-hover:text-brand">
+                  View project →
+                </p>
               </Link>
             );
           })}
