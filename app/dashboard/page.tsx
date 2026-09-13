@@ -23,6 +23,7 @@ export default function DashboardPage() {
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [keysByProject, setKeysByProject] = useState<Record<string, ApiKey[]>>({});
+  const [findingsCount, setFindingsCount] = useState(0);
   const [newProjectName, setNewProjectName] = useState("");
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -66,6 +67,14 @@ export default function DashboardPage() {
       grouped[row.project_id].push(row);
     }
     setKeysByProject(grouped);
+
+    const { count, error: findingsError } = await supabase
+      .from("findings")
+      .select("id", { count: "exact", head: true });
+
+    if (!findingsError) {
+      setFindingsCount(count ?? 0);
+    }
   }
 
   async function handleCreateProject(e: React.FormEvent) {
@@ -113,7 +122,7 @@ export default function DashboardPage() {
         </div>
         <div className="log-line rounded-lg border border-line bg-panel p-5">
           <p className="text-xs text-muted">Findings</p>
-          <p className="mt-1 font-display text-2xl font-medium text-muted">—</p>
+          <p className="mt-1 font-display text-2xl font-medium">{findingsCount}</p>
         </div>
       </div>
 

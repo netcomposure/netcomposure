@@ -20,6 +20,15 @@ type ApiKey = {
   revoked: boolean;
 };
 
+type Finding = {
+  id: string;
+  title: string;
+  severity: string;
+  status: string;
+  detail: string | null;
+  created_at: string;
+};
+
 function generateApiKey(): string {
   const bytes = new Uint8Array(24);
   crypto.getRandomValues(bytes);
@@ -31,6 +40,14 @@ function maskKey(key: string): string {
   return `nc_live_${"•".repeat(10)}${key.slice(-4)}`;
 }
 
+const SEVERITY_COLOR: Record<string, string> = {
+  critical: "text-red-400 border-red-400/40",
+  high: "text-orange-400 border-orange-400/40",
+  medium: "text-yellow-400 border-yellow-400/40",
+  low: "text-brand border-brand/40",
+  info: "text-muted border-line",
+};
+
 export default function ProjectDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -39,6 +56,7 @@ export default function ProjectDetailPage() {
   const [loading, setLoading] = useState(true);
   const [project, setProject] = useState<Project | null>(null);
   const [keys, setKeys] = useState<ApiKey[]>([]);
+  const [findings, setFindings] = useState<Finding[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [revealedKey, setRevealedKey] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
@@ -79,6 +97,20 @@ export default function ProjectDetailPage() {
     }
 
     setKeys(keyRows ?? []);
+
+    const { data: findingRows, error: findingError } = await supabase
+      .from("findings")
+      .select("id, title, severity, status, detail, created_at")
+      .eq("project_id", projectId)
+      .order("created_at", { ascending: false });
+
+    if (findingError) {
+      setError(findingError.message);
+      setLoading(false);
+      return;
+    }
+
+    setFindings(findingRows ?? []);
     setLoading(false);
   }
 
@@ -209,10 +241,35 @@ export default function ProjectDetailPage() {
 
       <section className="mt-10 rounded-lg border border-line bg-panel p-6">
         <h2 className="font-display text-lg font-medium">Findings</h2>
-        <p className="mt-3 text-sm text-muted">
-          No findings yet — this project&apos;s security scans will appear here
-          once the Net Composure engine is connected.
-        </p>
+
+        {findings.length === 0 && (
+          <p className="mt-3 text-sm text-muted">
+            No findings yet — this project&apos;s security scans will appear
+            here once you send events using your API key.
+          </p>
+        )}
+
+        <ul className="mt-4 flex flex-col gap-3">
+          {findings.map((f) => (
+            <li
+              key={f.id}
+              className={`rounded-md border px-4 py-3 ${SEVERITY_COLOR[f.severity] ?? "border-line"}`}
+            >
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-text">{f.title}</p>
+                <span className="text-xs uppercase tracking-wide">
+                  {f.severity}
+                </span>
+              </div>
+              {f.detail && (
+                <p className="mt-1 text-xs text-muted">{f.detail}</p>
+              )}
+              <p className="mt-2 text-xs text-muted">
+                {new Date(f.created_at).toLocaleString()}
+              </p>
+            </li>
+          ))}
+        </ul>
       </section>
     </div>
   );
