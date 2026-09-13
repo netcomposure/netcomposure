@@ -10,6 +10,7 @@ type Project = {
   id: string;
   name: string;
   created_at: string;
+  plan: string;
 };
 
 type ApiKey = {
@@ -68,6 +69,7 @@ export default function ProjectDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [revealedKey, setRevealedKey] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
+  const [upgrading, setUpgrading] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -80,7 +82,7 @@ export default function ProjectDetailPage() {
 
     const { data: projectRow, error: projectError } = await supabase
       .from("projects")
-      .select("id, name, created_at")
+      .select("id, name, created_at, plan")
       .eq("id", projectId)
       .single();
 
@@ -169,6 +171,25 @@ export default function ProjectDetailPage() {
     await loadData();
   }
 
+  async function handleUpgrade() {
+    setError(null);
+    setUpgrading(true);
+
+    const { error: updateError } = await supabase
+      .from("projects")
+      .update({ plan: "premium" })
+      .eq("id", projectId);
+
+    setUpgrading(false);
+
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
+
+    await loadData();
+  }
+
   if (loading) {
     return null;
   }
@@ -190,6 +211,8 @@ export default function ProjectDetailPage() {
     );
   }
 
+  const isPremium = project.plan === "premium";
+
   return (
     <div>
       <Link
@@ -202,19 +225,50 @@ export default function ProjectDetailPage() {
 
       <div className="mt-4 flex items-center justify-between">
         <div>
-          <h1 className="font-display text-2xl font-medium">{project.name}</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="font-display text-2xl font-medium">{project.name}</h1>
+            <span
+              className={`rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wide ${
+                isPremium
+                  ? "border-brand/40 text-brand"
+                  : "border-line text-muted"
+              }`}
+            >
+              {isPremium ? "Premium" : "Free"}
+            </span>
+          </div>
           <p className="mt-1 text-sm text-muted">
             Created {new Date(project.created_at).toLocaleDateString()}
           </p>
         </div>
-        <button
-          onClick={handleGenerateKey}
-          disabled={generating}
-          className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-ink hover:bg-brand-dim disabled:opacity-60"
-        >
-          {generating ? "Generating..." : "Generate API key"}
-        </button>
+        <div className="flex items-center gap-3">
+          {!isPremium && (
+            <button
+              onClick={handleUpgrade}
+              disabled={upgrading}
+              className="flex items-center gap-1.5 rounded-md border border-brand/40 px-4 py-2 text-sm text-brand hover:bg-brand/10 disabled:opacity-60"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              {upgrading ? "Upgrading..." : "Upgrade to Premium"}
+            </button>
+          )}
+          <button
+            onClick={handleGenerateKey}
+            disabled={generating}
+            className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-ink hover:bg-brand-dim disabled:opacity-60"
+          >
+            {generating ? "Generating..." : "Generate API key"}
+          </button>
+        </div>
       </div>
+
+      {!isPremium && (
+        <p className="mt-2 text-xs text-muted">
+          This upgrade button is a live preview — payments aren&apos;t
+          connected yet, but the plan change is real and unlocks Premium
+          detection features immediately.
+        </p>
+      )}
 
       {revealedKey && (
         <div className="mt-6 rounded-md border border-brand/40 bg-ink px-4 py-3">
@@ -275,8 +329,14 @@ export default function ProjectDetailPage() {
             <Sparkles className="h-4 w-4" />
             Smart auto-patch suggestions
           </div>
-          <span className="rounded-full border border-line px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted">
-            Premium
+          <span
+            className={`rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wide ${
+              isPremium
+                ? "border-brand/40 text-brand"
+                : "border-line text-muted"
+            }`}
+          >
+            {isPremium ? "Active" : "Premium"}
           </span>
         </div>
 
