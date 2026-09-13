@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { supabase } from "../../lib/supabase";
 
 type Project = {
@@ -13,21 +14,8 @@ type Project = {
 type ApiKey = {
   id: string;
   project_id: string;
-  key: string;
-  created_at: string;
   revoked: boolean;
 };
-
-function generateApiKey(): string {
-  const bytes = new Uint8Array(24);
-  crypto.getRandomValues(bytes);
-  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
-  return `nc_live_${hex}`;
-}
-
-function maskKey(key: string): string {
-  return `nc_live_${"•".repeat(10)}${key.slice(-4)}`;
-}
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -38,9 +26,6 @@ export default function DashboardPage() {
   const [newProjectName, setNewProjectName] = useState("");
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [revealedKey, setRevealedKey] = useState<{ projectId: string; key: string } | null>(
-    null
-  );
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
@@ -68,8 +53,7 @@ export default function DashboardPage() {
 
     const { data: keyRows, error: keyError } = await supabase
       .from("api_keys")
-      .select("id, project_id, key, created_at, revoked")
-      .order("created_at", { ascending: false });
+      .select("id, project_id, revoked");
 
     if (keyError) {
       setError(keyError.message);
@@ -103,24 +87,6 @@ export default function DashboardPage() {
     }
 
     setNewProjectName("");
-    await loadProjects();
-  }
-
-  async function handleGenerateKey(projectId: string) {
-    setError(null);
-    const newKey = generateApiKey();
-
-    const { error: insertError } = await supabase.from("api_keys").insert({
-      project_id: projectId,
-      key: newKey,
-    });
-
-    if (insertError) {
-      setError(insertError.message);
-      return;
-    }
-
-    setRevealedKey({ projectId, key: newKey });
     await loadProjects();
   }
 
@@ -181,46 +147,26 @@ export default function DashboardPage() {
           </p>
         )}
 
-        <div className="mt-4 flex flex-col gap-4">
+        <div className="mt-4 flex flex-col gap-3">
           {projects.map((project) => {
             const keys = keysByProject[project.id] ?? [];
+            const activeCount = keys.filter((k) => !k.revoked).length;
             return (
-              <div key={project.id} className="rounded-lg border border-line bg-panel p-6">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-display text-base font-medium">{project.name}</h3>
-                  <button
-                    onClick={() => handleGenerateKey(project.id)}
-                    className="rounded-md border border-line px-3 py-1.5 text-xs text-text hover:border-brand hover:text-brand"
-                  >
-                    Generate API key
-                  </button>
+              <Link
+                key={project.id}
+                href={`/dashboard/projects/${project.id}`}
+                className="flex items-center justify-between rounded-lg border border-line bg-panel p-6 transition-colors hover:border-brand/40"
+              >
+                <div>
+                  <h3 className="font-display text-base font-medium">
+                    {project.name}
+                  </h3>
+                  <p className="mt-1 text-xs text-muted">
+                    {activeCount} active key{activeCount === 1 ? "" : "s"}
+                  </p>
                 </div>
-
-                {revealedKey && revealedKey.projectId === project.id && (
-                  <div className="mt-4 rounded-md border border-brand/40 bg-ink px-4 py-3">
-                    <p className="text-xs text-brand">
-                      Copy this now — you won&apos;t see the full key again.
-                    </p>
-                    <p className="mt-1 select-all break-all font-mono text-sm">
-                      {revealedKey.key}
-                    </p>
-                  </div>
-                )}
-
-                {keys.length > 0 && (
-                  <ul className="mt-4 flex flex-col gap-2">
-                    {keys.map((k) => (
-                      <li
-                        key={k.id}
-                        className="flex items-center justify-between font-mono text-xs text-muted"
-                      >
-                        <span>{maskKey(k.key)}</span>
-                        <span>{new Date(k.created_at).toLocaleDateString()}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
+                <span className="text-sm text-muted">→</span>
+              </Link>
             );
           })}
         </div>
