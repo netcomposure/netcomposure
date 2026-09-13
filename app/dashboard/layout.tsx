@@ -7,17 +7,20 @@ import {
   LayoutDashboard,
   BookOpen,
   Settings,
-  ChevronsLeft,
-  ChevronsRight,
+  CreditCard,
+  PanelLeftClose,
+  PanelLeftOpen,
   LogOut,
   ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 
 const NAV_ITEMS = [
   { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { label: "API Reference", href: "/docs", icon: BookOpen },
-  { label: "Settings", href: "/settings", icon: Settings },
+  { label: "Billing", href: "/dashboard/billing", icon: CreditCard },
+  { label: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 
 export default function DashboardLayout({
@@ -77,11 +80,26 @@ export default function DashboardLayout({
           collapsed ? "w-[68px]" : "w-60"
         }`}
       >
-        <div className="flex items-center gap-2 border-b border-line px-4 py-4">
-          <ShieldCheck className="h-6 w-6 shrink-0 text-brand" />
-          {!collapsed && (
-            <span className="font-display text-sm font-medium">Net Composure</span>
-          )}
+        <div className="flex items-center justify-between gap-2 border-b border-line px-3 py-4">
+          <div className="flex items-center gap-2 overflow-hidden">
+            <ShieldCheck className="h-6 w-6 shrink-0 text-brand" />
+            {!collapsed && (
+              <span className="truncate font-display text-sm font-medium">
+                Net Composure
+              </span>
+            )}
+          </div>
+          <button
+            onClick={toggleCollapsed}
+            className="shrink-0 rounded-md p-1.5 text-muted hover:bg-panel-raised hover:text-text"
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {collapsed ? (
+              <PanelLeftOpen className="h-4 w-4" />
+            ) : (
+              <PanelLeftClose className="h-4 w-4" />
+            )}
+          </button>
         </div>
 
         <nav className="flex flex-1 flex-col gap-1 px-3 py-4 text-sm">
@@ -106,19 +124,15 @@ export default function DashboardLayout({
           })}
         </nav>
 
-        <button
-          onClick={toggleCollapsed}
-          className="flex items-center gap-3 border-t border-line px-3 py-4 text-sm text-muted hover:text-text"
-        >
-          {collapsed ? (
-            <ChevronsRight className="h-4 w-4" />
-          ) : (
-            <>
-              <ChevronsLeft className="h-4 w-4" />
-              <span>Collapse</span>
-            </>
-          )}
-        </button>
+        {!collapsed && (
+          <Link
+            href="/dashboard/billing"
+            className="m-3 flex items-center gap-2 rounded-md border border-brand/30 bg-brand/10 px-3 py-2.5 text-xs text-brand hover:border-brand/60"
+          >
+            <Sparkles className="h-3.5 w-3.5 shrink-0" />
+            Upgrade to Premium
+          </Link>
+        )}
       </aside>
 
       <div className="flex-1">
@@ -145,7 +159,7 @@ export default function DashboardLayout({
             </button>
 
             {profileOpen && (
-              <div className="absolute right-0 mt-2 w-64 rounded-lg border border-line bg-panel p-2 shadow-2xl shadow-black/50">
+              <div className="absolute right-0 mt-2 w-72 rounded-lg border border-line bg-panel p-2 shadow-2xl shadow-black/50">
                 <div className="flex items-center gap-3 border-b border-line px-3 py-3">
                   {avatarUrl && (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -159,12 +173,33 @@ export default function DashboardLayout({
                     <p className="truncate text-sm font-medium text-text">
                       {email}
                     </p>
-                    <p className="text-xs text-muted">Net Composure account</p>
+                    <div className="mt-1 flex items-center gap-1.5">
+                      <span className="rounded-full border border-line px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted">
+                        Free plan
+                      </span>
+                    </div>
                   </div>
                 </div>
+
+                <Link
+                  href="/dashboard/settings"
+                  onClick={() => setProfileOpen(false)}
+                  className="mt-2 flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-text hover:bg-panel-raised"
+                >
+                  <Settings className="h-4 w-4" />
+                  Account settings
+                </Link>
+                <Link
+                  href="/dashboard/billing"
+                  onClick={() => setProfileOpen(false)}
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-brand hover:bg-panel-raised"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Upgrade to Premium
+                </Link>
                 <button
                   onClick={handleLogout}
-                  className="mt-2 flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-red-400 hover:bg-panel-raised"
+                  className="mt-1 flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-red-400 hover:bg-panel-raised"
                 >
                   <LogOut className="h-4 w-4" />
                   Log out

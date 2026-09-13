@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Sparkles } from "lucide-react";
 import { supabase } from "../../../../lib/supabase";
 
 type Project = {
@@ -269,6 +269,16 @@ export default function ProjectDetailPage() {
           IPs automatically blocked after matching an attack pattern or
           repeated failed logins.
         </p>
+
+        <div className="mt-4 flex items-center justify-between rounded-md border border-dashed border-line px-4 py-3">
+          <div className="flex items-center gap-2 text-sm text-muted">
+            <Sparkles className="h-4 w-4" />
+            Smart auto-patch suggestions
+          </div>
+          <span className="rounded-full border border-line px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted">
+            Premium
+          </span>
+        </div>
 
         {blockedIps.length === 0 && (
           <p className="mt-4 text-sm text-muted">
