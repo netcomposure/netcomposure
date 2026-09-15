@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Sparkles, KeyRound, ShieldAlert, Ban } from "lucide-react";
 import { supabase } from "../../../../lib/supabase";
+import GenerateFix from "../../../components/GenerateFix";
 
 type Project = {
   id: string;
@@ -412,6 +413,8 @@ export default function ProjectDetailPage() {
                 {f.detail && (
                   <p className="mt-1 text-xs text-muted">{f.detail}</p>
                 )}
+                {f.title.startsWith("Premium: Smart patch suggestion") &&
+                  f.detail && <GenerateFix detail={f.detail} />}
                 <p className="mt-2 text-xs text-muted">
                   {new Date(f.created_at).toLocaleString()}
                 </p>
