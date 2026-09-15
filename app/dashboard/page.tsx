@@ -3,7 +3,15 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { FolderKanban, KeyRound, ShieldAlert, Sparkles } from "lucide-react";
+import {
+  FolderKanban,
+  KeyRound,
+  ShieldAlert,
+  Sparkles,
+  Plus,
+  Shield,
+  X,
+} from "lucide-react";
 import { supabase } from "../../lib/supabase";
 
 type Project = {
@@ -19,6 +27,21 @@ type ApiKey = {
   revoked: boolean;
 };
 
+const TILE_COLORS = [
+  "from-brand/30 to-brand/5",
+  "from-blue-400/30 to-blue-400/5",
+  "from-purple-400/30 to-purple-400/5",
+  "from-orange-400/30 to-orange-400/5",
+  "from-pink-400/30 to-pink-400/5",
+  "from-teal-400/30 to-teal-400/5",
+];
+
+function tileColor(id: string) {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash += id.charCodeAt(i);
+  return TILE_COLORS[hash % TILE_COLORS.length];
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const [checking, setChecking] = useState(true);
@@ -29,6 +52,7 @@ export default function DashboardPage() {
   const [newProjectName, setNewProjectName] = useState("");
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
@@ -98,6 +122,7 @@ export default function DashboardPage() {
     }
 
     setNewProjectName("");
+    setShowCreate(false);
     await loadProjects();
   }
 
@@ -109,12 +134,12 @@ export default function DashboardPage() {
   const activeKeys = totalKeys.filter((k) => !k.revoked).length;
 
   return (
-    <div>
+    <div className="flex-1 overflow-y-auto px-8 py-10">
       <h1 className="font-display text-2xl font-medium">Overview</h1>
       <p className="mt-1 text-sm text-muted">Your projects and API keys.</p>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-3">
-        <div className="rounded-lg border border-line bg-panel p-5">
+        <div className="rounded-2xl border border-line bg-panel p-5">
           <div className="flex items-center justify-between">
             <p className="text-xs text-muted">Projects</p>
             <FolderKanban className="h-4 w-4 text-muted" />
@@ -123,7 +148,7 @@ export default function DashboardPage() {
             {projects.length}
           </p>
         </div>
-        <div className="rounded-lg border border-line bg-panel p-5">
+        <div className="rounded-2xl border border-line bg-panel p-5">
           <div className="flex items-center justify-between">
             <p className="text-xs text-muted">Active API keys</p>
             <KeyRound className="h-4 w-4 text-muted" />
@@ -132,7 +157,7 @@ export default function DashboardPage() {
             {activeKeys}
           </p>
         </div>
-        <div className="rounded-lg border border-line bg-panel p-5">
+        <div className="rounded-2xl border border-line bg-panel p-5">
           <div className="flex items-center justify-between">
             <p className="text-xs text-muted">Findings</p>
             <ShieldAlert className="h-4 w-4 text-muted" />
@@ -143,75 +168,92 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <section className="mt-10 rounded-lg border border-line bg-panel p-6">
-        <h2 className="font-display text-lg font-medium">Create a project</h2>
-        <form onSubmit={handleCreateProject} className="mt-4 flex gap-3">
-          <input
-            type="text"
-            placeholder="e.g. My Blog Backend"
-            value={newProjectName}
-            onChange={(e) => setNewProjectName(e.target.value)}
-            className="flex-1 rounded-md border border-line bg-ink px-3 py-2 text-sm outline-none focus:border-brand"
-          />
-          <button
-            type="submit"
-            disabled={creating}
-            className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-ink hover:bg-brand-dim disabled:opacity-60"
-          >
-            {creating ? "Creating..." : "Create"}
-          </button>
-        </form>
-        {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
-      </section>
-
-      <section className="mt-10">
+      <div className="mt-10 flex items-center justify-between">
         <h2 className="font-display text-lg font-medium">Your projects</h2>
+        <button
+          onClick={() => setShowCreate(true)}
+          className="flex items-center gap-1.5 rounded-full bg-brand px-4 py-2 text-xs font-medium text-ink hover:bg-brand-dim"
+        >
+          <Plus className="h-3.5 w-3.5" />
+          New project
+        </button>
+      </div>
 
-        {projects.length === 0 && (
-          <p className="mt-3 text-sm text-muted">
-            No projects yet — create one above to get your first API key.
-          </p>
-        )}
+      {projects.length === 0 && (
+        <p className="mt-4 text-sm text-muted">
+          No projects yet — tap &quot;New project&quot; to get your first API key.
+        </p>
+      )}
 
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          {projects.map((project) => {
-            const keys = keysByProject[project.id] ?? [];
-            const activeCount = keys.filter((k) => !k.revoked).length;
-            const isPremium = project.plan === "premium";
-            return (
-              <Link
-                key={project.id}
-                href={`/dashboard/projects/${project.id}`}
-                className="group flex flex-col justify-between rounded-lg border border-line bg-panel p-5 transition-colors hover:border-brand/40"
+      <div className="mt-6 grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+        {projects.map((project) => {
+          const keys = keysByProject[project.id] ?? [];
+          const activeCount = keys.filter((k) => !k.revoked).length;
+          const isPremium = project.plan === "premium";
+          return (
+            <Link
+              key={project.id}
+              href={`/dashboard/projects/${project.id}`}
+              className="group flex flex-col items-center gap-2.5"
+            >
+              <div
+                className={`relative flex h-20 w-20 items-center justify-center rounded-[22px] border border-line bg-gradient-to-br ${tileColor(
+                  project.id
+                )} shadow-lg shadow-black/20 transition-transform group-hover:scale-105 group-active:scale-95`}
               >
-                <div>
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-display text-base font-medium">
-                      {project.name}
-                    </h3>
-                    <span
-                      className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wide ${
-                        isPremium
-                          ? "border-brand/40 text-brand"
-                          : "border-line text-muted"
-                      }`}
-                    >
-                      {isPremium && <Sparkles className="h-2.5 w-2.5" />}
-                      {isPremium ? "Premium" : "Free"}
-                    </span>
-                  </div>
-                  <p className="mt-2 text-xs text-muted">
-                    {activeCount} active key{activeCount === 1 ? "" : "s"}
-                  </p>
-                </div>
-                <p className="mt-4 text-xs text-muted group-hover:text-brand">
-                  View project →
-                </p>
-              </Link>
-            );
-          })}
+                <Shield className="h-8 w-8 text-text/80" strokeWidth={1.5} />
+                {isPremium && (
+                  <span className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full border border-line bg-panel">
+                    <Sparkles className="h-2.5 w-2.5 text-brand" />
+                  </span>
+                )}
+                {activeCount > 0 && (
+                  <span className="absolute -bottom-1.5 -right-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-brand px-1 text-[10px] font-medium text-ink">
+                    {activeCount}
+                  </span>
+                )}
+              </div>
+              <span className="max-w-[6.5rem] truncate text-center text-xs text-text">
+                {project.name}
+              </span>
+            </Link>
+          );
+        })}
+      </div>
+
+      {showCreate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-6">
+          <div className="w-full max-w-sm rounded-2xl border border-line bg-panel p-6">
+            <div className="flex items-center justify-between">
+              <h3 className="font-display text-lg font-medium">New project</h3>
+              <button
+                onClick={() => setShowCreate(false)}
+                className="text-muted hover:text-text"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <form onSubmit={handleCreateProject} className="mt-5 flex flex-col gap-4">
+              <input
+                type="text"
+                autoFocus
+                placeholder="e.g. My Blog Backend"
+                value={newProjectName}
+                onChange={(e) => setNewProjectName(e.target.value)}
+                className="rounded-md border border-line bg-ink px-3 py-2.5 text-sm outline-none focus:border-brand"
+              />
+              {error && <p className="text-sm text-red-400">{error}</p>}
+              <button
+                type="submit"
+                disabled={creating}
+                className="rounded-md bg-brand px-4 py-2.5 text-sm font-medium text-ink hover:bg-brand-dim disabled:opacity-60"
+              >
+                {creating ? "Creating..." : "Create project"}
+              </button>
+            </form>
+          </div>
         </div>
-      </section>
+      )}
     </div>
   );
 }

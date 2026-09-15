@@ -8,17 +8,14 @@ import {
   BookOpen,
   Settings,
   CreditCard,
-  PanelLeftClose,
-  PanelLeftOpen,
   LogOut,
   ShieldCheck,
-  Sparkles,
 } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 
 const NAV_ITEMS = [
   { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
-  { label: "API Reference", href: "/docs", icon: BookOpen },
+  { label: "Docs", href: "/docs", icon: BookOpen },
   { label: "Billing", href: "/dashboard/billing", icon: CreditCard },
   { label: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
@@ -33,7 +30,6 @@ export default function DashboardLayout({
 
   const [email, setEmail] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
-  const [collapsed, setCollapsed] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
 
@@ -42,9 +38,6 @@ export default function DashboardLayout({
       setEmail(data.user?.email ?? null);
       setUserId(data.user?.id ?? null);
     });
-
-    const stored = localStorage.getItem("nc_sidebar_collapsed");
-    if (stored === "true") setCollapsed(true);
   }, []);
 
   useEffect(() => {
@@ -57,13 +50,6 @@ export default function DashboardLayout({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  function toggleCollapsed() {
-    setCollapsed((prev) => {
-      localStorage.setItem("nc_sidebar_collapsed", String(!prev));
-      return !prev;
-    });
-  }
-
   async function handleLogout() {
     await supabase.auth.signOut();
     router.replace("/login");
@@ -74,35 +60,14 @@ export default function DashboardLayout({
     : null;
 
   return (
-    <div className="flex min-h-screen">
-      <aside
-        className={`hidden shrink-0 flex-col border-r border-line bg-panel transition-all duration-200 md:flex ${
-          collapsed ? "w-[68px]" : "w-60"
-        }`}
-      >
-        <div className="flex items-center justify-between gap-2 border-b border-line px-3 py-4">
-          <div className="flex items-center gap-2 overflow-hidden">
-            <ShieldCheck className="h-6 w-6 shrink-0 text-brand" />
-            {!collapsed && (
-              <span className="truncate font-display text-sm font-medium">
-                Net Composure
-              </span>
-            )}
-          </div>
-          <button
-            onClick={toggleCollapsed}
-            className="shrink-0 rounded-md p-1.5 text-muted hover:bg-panel-raised hover:text-text"
-            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            {collapsed ? (
-              <PanelLeftOpen className="h-4 w-4" />
-            ) : (
-              <PanelLeftClose className="h-4 w-4" />
-            )}
-          </button>
+    <div className="flex h-screen flex-col overflow-hidden bg-ink">
+      <header className="flex shrink-0 items-center justify-between border-b border-line px-6 py-3">
+        <div className="flex items-center gap-2">
+          <ShieldCheck className="h-5 w-5 text-brand" />
+          <span className="font-display text-sm font-medium">Net Composure</span>
         </div>
 
-        <nav className="flex flex-1 flex-col gap-1 px-3 py-4 text-sm">
+        <nav className="flex items-center gap-1 rounded-full border border-line bg-panel p-1">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const active = pathname === item.href;
@@ -110,107 +75,85 @@ export default function DashboardLayout({
               <Link
                 key={item.href}
                 href={item.href}
-                title={collapsed ? item.label : undefined}
-                className={`flex items-center gap-3 rounded-md px-3 py-2 transition-colors ${
+                className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
                   active
-                    ? "bg-panel-raised text-brand"
-                    : "text-muted hover:bg-panel-raised hover:text-text"
+                    ? "bg-brand text-ink"
+                    : "text-muted hover:text-text"
                 }`}
               >
-                <Icon className="h-4 w-4 shrink-0" />
-                {!collapsed && <span>{item.label}</span>}
+                <Icon className="h-3.5 w-3.5" />
+                {item.label}
               </Link>
             );
           })}
         </nav>
 
-        {!collapsed && (
-          <Link
-            href="/dashboard/billing"
-            className="m-3 flex items-center gap-2 rounded-md border border-brand/30 bg-brand/10 px-3 py-2.5 text-xs text-brand hover:border-brand/60"
+        <div className="relative" ref={profileRef}>
+          <button
+            onClick={() => setProfileOpen((prev) => !prev)}
+            className="flex items-center gap-2 rounded-full border border-line p-1 pr-3 hover:border-white/20"
           >
-            <Sparkles className="h-3.5 w-3.5 shrink-0" />
-            Upgrade to Premium
-          </Link>
-        )}
-      </aside>
-
-      <div className="flex-1">
-        <header className="flex items-center justify-between border-b border-line px-8 py-3">
-          <div className="flex items-center gap-2 text-sm text-muted">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-brand" />
-            All systems operational
-          </div>
-
-          <div className="relative" ref={profileRef}>
-            <button
-              onClick={() => setProfileOpen((prev) => !prev)}
-              className="flex items-center gap-2 rounded-full border border-line p-1 pr-3 hover:border-white/20"
-            >
-              {avatarUrl && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={avatarUrl}
-                  alt="Profile avatar"
-                  className="h-7 w-7 rounded-full bg-ink"
-                />
-              )}
-              <span className="hidden text-sm sm:inline">{email}</span>
-            </button>
-
-            {profileOpen && (
-              <div className="absolute right-0 mt-2 w-72 rounded-lg border border-line bg-panel p-2 shadow-2xl shadow-black/50">
-                <div className="flex items-center gap-3 border-b border-line px-3 py-3">
-                  {avatarUrl && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={avatarUrl}
-                      alt="Profile avatar"
-                      className="h-10 w-10 rounded-full bg-ink"
-                    />
-                  )}
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-text">
-                      {email}
-                    </p>
-                    <div className="mt-1 flex items-center gap-1.5">
-                      <span className="rounded-full border border-line px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted">
-                        Free plan
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <Link
-                  href="/dashboard/settings"
-                  onClick={() => setProfileOpen(false)}
-                  className="mt-2 flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-text hover:bg-panel-raised"
-                >
-                  <Settings className="h-4 w-4" />
-                  Account settings
-                </Link>
-                <Link
-                  href="/dashboard/billing"
-                  onClick={() => setProfileOpen(false)}
-                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-brand hover:bg-panel-raised"
-                >
-                  <Sparkles className="h-4 w-4" />
-                  Upgrade to Premium
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  className="mt-1 flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-red-400 hover:bg-panel-raised"
-                >
-                  <LogOut className="h-4 w-4" />
-                  Log out
-                </button>
-              </div>
+            {avatarUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={avatarUrl}
+                alt="Profile avatar"
+                className="h-7 w-7 rounded-full bg-ink"
+              />
             )}
-          </div>
-        </header>
+            <span className="hidden text-xs sm:inline">{email}</span>
+          </button>
 
-        <div className="px-8 py-10">{children}</div>
-      </div>
+          {profileOpen && (
+            <div className="absolute right-0 mt-2 w-72 rounded-lg border border-line bg-panel p-2 shadow-2xl shadow-black/50">
+              <div className="flex items-center gap-3 border-b border-line px-3 py-3">
+                {avatarUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={avatarUrl}
+                    alt="Profile avatar"
+                    className="h-10 w-10 rounded-full bg-ink"
+                  />
+                )}
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-text">{email}</p>
+                  <span className="mt-1 inline-block rounded-full border border-line px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted">
+                    Free plan
+                  </span>
+                </div>
+              </div>
+
+              <Link
+                href="/dashboard/settings"
+                onClick={() => setProfileOpen(false)}
+                className="mt-2 flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-text hover:bg-panel-raised"
+              >
+                <Settings className="h-4 w-4" />
+                Account settings
+              </Link>
+              <Link
+                href="/dashboard/billing"
+                onClick={() => setProfileOpen(false)}
+                className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-brand hover:bg-panel-raised"
+              >
+                <CreditCard className="h-4 w-4" />
+                Upgrade to Premium
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="mt-1 flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-red-400 hover:bg-panel-raised"
+              >
+                <LogOut className="h-4 w-4" />
+                Log out
+              </button>
+            </div>
+          )}
+        </div>
+      </header>
+
+      <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        {children}
+      </main>
     </div>
   );
 }
