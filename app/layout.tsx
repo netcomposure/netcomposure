@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, Inter } from "next/font/google";
 import "./globals.css";
-import BFCacheBuster from "./BFCacheBuster";
+import Preloader from "./components/Preloader";
+import ScrollFX from "./components/ScrollFX";
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
@@ -29,7 +30,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${spaceGrotesk.variable} ${inter.variable} antialiased`}>
-        <BFCacheBuster />
+        <Preloader />
+        <ScrollFX />
         {children}
       </body>
     </html>

@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
+import KineticReveal from "./components/KineticReveal";
+import KineticHero from "./components/kineticHero";
 
 const EVENT_POOL = [
   { level: "INFO", text: "auth.session.created  user=8f2e...c1" },
@@ -37,14 +38,14 @@ function LiveTerminal() {
   }, []);
 
   return (
-    <div className="rounded-lg border border-line bg-panel shadow-2xl shadow-black/40">
+    <div className="mx-auto max-w-2xl rounded-lg border border-line bg-panel shadow-2xl shadow-black/40">
       <div className="flex items-center gap-1.5 border-b border-line px-4 py-3">
         <span className="h-2.5 w-2.5 rounded-full bg-white/15" />
         <span className="h-2.5 w-2.5 rounded-full bg-white/15" />
         <span className="h-2.5 w-2.5 rounded-full bg-white/15" />
         <span className="ml-3 text-xs text-muted">events.stream</span>
       </div>
-      <div className="h-64 overflow-hidden px-4 py-4 font-mono text-[13px] leading-6">
+      <div className="h-56 overflow-hidden px-4 py-4 text-left font-mono text-[13px] leading-6">
         {lines.map((line, idx) => (
           <div key={`${line.text}-${idx}`} className="log-line flex gap-3">
             <span className={`w-10 shrink-0 ${LEVEL_COLOR[line.level]}`}>
@@ -64,7 +65,7 @@ function NavBar() {
     <header className="border-b border-line">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         <div className="flex items-center gap-2">
-          <Image src="/logo.png" alt="Net Composure logo" width={28} height={28} />
+          <span data-scroll-spin className="h-6 w-6 rounded-md bg-brand" />
           <span className="font-display text-lg font-medium">Net Composure</span>
         </div>
         <nav className="hidden gap-8 text-sm text-muted md:flex">
@@ -86,34 +87,12 @@ function NavBar() {
   );
 }
 
-function Hero() {
+function LiveTerminalSection() {
   return (
-    <section className="mx-auto grid max-w-6xl gap-12 px-6 py-20 md:grid-cols-2 md:items-center md:py-28">
-      <div>
-        <h1 className="font-display text-4xl font-medium leading-tight md:text-5xl">
-          Know what&apos;s happening inside your app before it becomes a breach.
-        </h1>
-        <p className="mt-5 max-w-md text-base text-muted">
-          Net Composure watches the security signals your app already
-          produces and turns them into findings your team can actually act
-          on — ranked by severity, with a fix attached.
-        </p>
-        <div className="mt-8 flex gap-4">
-          <Link
-            href="/signup"
-            className="rounded-md bg-brand px-5 py-3 text-sm font-medium text-ink hover:bg-brand-dim"
-          >
-            Get started
-          </Link>
-          <Link
-            href="/docs"
-            className="rounded-md border border-line px-5 py-3 text-sm font-medium text-text hover:border-white/20"
-          >
-            View the API
-          </Link>
-        </div>
-      </div>
-      <LiveTerminal />
+    <section className="border-b border-line py-16">
+      <KineticReveal className="px-6">
+        <LiveTerminal />
+      </KineticReveal>
     </section>
   );
 }
@@ -132,21 +111,21 @@ function HowItWorks() {
     },
     {
       n: "3",
-      title: "Findings appear",
-      body: "Results land in your dashboard with severity, context, and a clear remediation step.",
+      title: "We act",
+      body: "Clear-cut threats get blocked or contained automatically. Everything else lands in your dashboard with a recommendation.",
     },
   ];
   return (
-    <section id="how-it-works" className="border-t border-line">
+    <section id="how-it-works" className="border-b border-line">
       <div className="mx-auto max-w-6xl px-6 py-20">
         <h2 className="font-display text-2xl font-medium">How it works</h2>
         <div className="mt-10 grid gap-10 md:grid-cols-3">
-          {steps.map((s) => (
-            <div key={s.n}>
-              <span className="font-display text-sm text-brand">{s.n}</span>
+          {steps.map((s, i) => (
+            <KineticReveal key={s.n} delay={i * 0.1}>
+              <span data-scroll-spin className="inline-block font-display text-sm text-brand">{s.n}</span>
               <h3 className="mt-3 font-display text-lg font-medium">{s.title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-muted">{s.body}</p>
-            </div>
+            </KineticReveal>
           ))}
         </div>
       </div>
@@ -157,31 +136,35 @@ function HowItWorks() {
 function Features() {
   const items = [
     {
+      title: "Malware scanning",
+      body: "Every uploaded file checked against a live threat database — no guessing, no invented results.",
+    },
+    {
       title: "Dependency scanning",
-      body: "Flags known-vulnerable packages in your project before they ship.",
+      body: "Flags known-vulnerable packages before they ship, with the exact patched version to upgrade to.",
     },
     {
-      title: "Misconfiguration checks",
-      body: "Catches exposed debug modes, open CORS policies, and weak defaults.",
+      title: "Real-time firewall",
+      body: "Blocks known attack patterns before they reach your app, and remembers the source.",
     },
     {
-      title: "Malware analysis",
-      body: "Runs suspicious files in an isolated environment and reports what they do.",
-    },
-    {
-      title: "Real-time alerts",
-      body: "Sends a notification the moment a high-severity finding is created.",
+      title: "Auto-remediation",
+      body: "Critical findings trigger a safe, reversible response automatically — no one has to be watching at 3am.",
     },
   ];
   return (
-    <section className="border-t border-line">
+    <section className="border-b border-line">
       <div className="mx-auto max-w-6xl px-6 py-20">
         <div className="grid gap-8 sm:grid-cols-2">
-          {items.map((item) => (
-            <div key={item.title} className="border-l border-line pl-5">
+          {items.map((item, i) => (
+            <KineticReveal
+              key={item.title}
+              delay={i * 0.08}
+              className="border-l border-line pl-5"
+            >
               <h3 className="font-display text-base font-medium">{item.title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-muted">{item.body}</p>
-            </div>
+            </KineticReveal>
           ))}
         </div>
       </div>
@@ -191,7 +174,7 @@ function Features() {
 
 function CTA() {
   return (
-    <section className="border-t border-line">
+    <section className="border-b border-line">
       <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 px-6 py-16 md:flex-row md:items-center">
         <h2 className="font-display text-2xl font-medium">
           Start securing your app in minutes.
@@ -209,7 +192,7 @@ function CTA() {
 
 function Footer() {
   return (
-    <footer className="border-t border-line">
+    <footer>
       <div className="mx-auto grid max-w-6xl gap-8 px-6 py-16 text-sm sm:grid-cols-3">
         <div>
           <p className="font-display text-text">Product</p>
@@ -245,7 +228,8 @@ export default function Home() {
   return (
     <main>
       <NavBar />
-      <Hero />
+      <KineticHero />
+      <LiveTerminalSection />
       <HowItWorks />
       <Features />
       <CTA />

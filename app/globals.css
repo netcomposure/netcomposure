@@ -55,9 +55,29 @@ body {
   animation: rise-fade 0.4s ease-out;
 }
 
+@keyframes marquee-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee-scroll 28s linear infinite;
+}
+
+.marquee-track-reverse {
+  animation-direction: reverse;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .cursor-blink,
-  .log-line {
+  .log-line,
+  .marquee-track {
     animation: none;
   }
 }
