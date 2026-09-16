@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowLeft, Sparkles, KeyRound, ShieldAlert, Ban } from "lucide-react";
 import { supabase } from "../../../../lib/supabase";
 import GenerateFix from "../../../components/GenerateFix";
+import SecurityScore from "../../../components/SecurityScore";
 
 type Project = {
   id: string;
@@ -271,6 +272,10 @@ export default function ProjectDetailPage() {
             detection features immediately.
           </p>
         )}
+
+        <div className="mt-6">
+          <SecurityScore findings={findings} />
+        </div>
 
         {revealedKey && (
           <div className="mt-6 rounded-md border border-brand/40 bg-ink px-4 py-3">
