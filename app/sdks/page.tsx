@@ -52,7 +52,7 @@ if result["status"] == "blocked":
     install: "Direct HTTP call, no SDK file needed",
     snippet: `HttpClient client = HttpClient.newHttpClient();
 HttpRequest request = HttpRequest.newBuilder()
-    .uri(URI.create("https://engine.netcomposure.dev/v1/check-request"))
+    .uri(URI.create("https://netcomposure-engine.onrender.com/v1/check-request"))
     .header("Content-Type", "application/json")
     .header("Authorization", "Bearer " + apiKey)
     .POST(HttpRequest.BodyPublishers.ofString(body))
@@ -67,7 +67,7 @@ client.send(request, HttpResponse.BodyHandlers.ofString());`,
     install: "Direct HTTP call via libcurl",
     snippet: `CURL* curl = curl_easy_init();
 curl_easy_setopt(curl, CURLOPT_URL,
-  "https://engine.netcomposure.dev/v1/check-request");
+  "https://netcomposure-engine.onrender.com/v1/check-request");
 curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
 curl_easy_setopt(curl, CURLOPT_POSTFIELDS, body.c_str());
 curl_easy_perform(curl);`,
@@ -81,7 +81,7 @@ curl_easy_perform(curl);`,
 client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
 var content = new StringContent(json, Encoding.UTF8, "application/json");
 var response = await client.PostAsync(
-  "https://engine.netcomposure.dev/v1/check-request", content);`,
+  "https://netcomposure-engine.onrender.com/v1/check-request", content);`,
   },
 ];
 

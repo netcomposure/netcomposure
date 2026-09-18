@@ -1,6 +1,5 @@
 /**
  * Net Composure SDK — JavaScript/Node
- * https://netcomposure.dev
  *
  * Usage:
  *   const NetComposure = require("./netcomposure.js");
@@ -9,7 +8,7 @@
  */
 
 class NetComposure {
-  constructor(apiKey, baseUrl = "https://engine.netcomposure.dev") {
+    constructor(apiKey, baseUrl = "https://netcomposure-engine.onrender.com") {
     this.apiKey = apiKey;
     this.baseUrl = baseUrl;
   }

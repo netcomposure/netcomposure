@@ -50,7 +50,7 @@ export default function DocsPage() {
 
 app.post("/login", async (req, res) => {
   const check = await axios.post(
-    "https://engine.netcomposure.dev/v1/check-request",
+    "https://netcomposure-engine.onrender.com/v1/check-request",
     { ip: req.ip, data: req.body },
     { headers: { Authorization: \`Bearer \${process.env.NET_COMPOSURE_API_KEY}\` } }
   );
@@ -68,7 +68,7 @@ app.post("/login", async (req, res) => {
           </h2>
           <pre className="mt-2 overflow-x-auto rounded-lg border border-line bg-panel p-4 text-xs">
 {`await axios.post(
-  "https://engine.netcomposure.dev/v1/report-event",
+  "https://netcomposure-engine.onrender.com/v1/report-event",
   { event_type: "failed_login", ip: req.ip },
   { headers: { Authorization: \`Bearer \${process.env.NET_COMPOSURE_API_KEY}\` } }
 );`}
@@ -84,7 +84,7 @@ app.post("/login", async (req, res) => {
 formData.append("file", uploadedFile);
 
 const scan = await axios.post(
-  "https://engine.netcomposure.dev/v1/scan-file",
+  "https://netcomposure-engine.onrender.com/v1/scan-file",
   formData,
   { headers: { Authorization: \`Bearer \${process.env.NET_COMPOSURE_API_KEY}\` } }
 );
@@ -101,7 +101,7 @@ if (scan.data.status === "malicious") {
           </h2>
           <pre className="mt-2 overflow-x-auto rounded-lg border border-line bg-panel p-4 text-xs">
 {`await axios.post(
-  "https://engine.netcomposure.dev/v1/scan-dependencies",
+  "https://netcomposure-engine.onrender.com/v1/scan-dependencies",
   { ecosystem: "npm", dependencies: [{ name: "lodash", version: "4.17.11" }] },
   { headers: { Authorization: \`Bearer \${process.env.NET_COMPOSURE_API_KEY}\` } }
 );`}
