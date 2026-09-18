@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import KineticReveal from "./components/KineticReveal";
 import KineticHero from "./components/kineticHero";
+import SiteFooter from "./components/SiteFooter";
 
 const EVENT_POOL = [
   { level: "INFO", text: "auth.session.created  user=8f2e...c1" },
@@ -87,12 +88,58 @@ function NavBar() {
   );
 }
 
-function LiveTerminalSection() {
+function TrustBar() {
+  const items = [
+    "Malware intelligence, sourced live",
+    "Real CVE data, not guesswork",
+    "Built for indie teams and small startups",
+  ];
   return (
-    <section className="border-b border-line py-16">
-      <KineticReveal className="px-6">
-        <LiveTerminal />
-      </KineticReveal>
+    <section className="border-b border-line py-8">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-10 gap-y-3 px-6 text-xs text-muted">
+        {items.map((item) => (
+          <span key={item} className="flex items-center gap-2">
+            <span className="h-1 w-1 rounded-full bg-brand" />
+            {item}
+          </span>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function LiveOpsPanel() {
+  const rows = [
+    { label: "Requests inspected today", value: "Live, per project" },
+    { label: "Attack patterns recognized", value: "SQL injection, XSS, path traversal" },
+    { label: "Auto-remediation actions", value: "Reversible, logged, explained" },
+  ];
+  return (
+    <section className="border-b border-line">
+      <div className="mx-auto max-w-6xl px-6 py-20">
+        <KineticReveal>
+          <h2 className="font-display text-2xl font-medium">
+            A security team that never sleeps
+          </h2>
+          <p className="mt-3 max-w-lg text-sm text-muted">
+            Net Composure runs the same checks a real security engineer
+            would — constantly, automatically, and with a clear paper
+            trail for everything it does.
+          </p>
+        </KineticReveal>
+        <div className="mt-10 grid gap-4 sm:grid-cols-3">
+          {rows.map((row, i) => (
+            <KineticReveal
+              key={row.label}
+              delay={i * 0.08}
+              className="rounded-lg border border-line bg-panel p-5"
+            >
+              <p className="text-xs text-muted">{row.label}</p>
+              <p className="mt-2 font-display text-sm font-medium">{row.value}</p>
+            </KineticReveal>
+          ))}
+        </div>
+      </div>
     </section>
   );
 }
@@ -122,7 +169,9 @@ function HowItWorks() {
         <div className="mt-10 grid gap-10 md:grid-cols-3">
           {steps.map((s, i) => (
             <KineticReveal key={s.n} delay={i * 0.1}>
-              <span data-scroll-spin className="inline-block font-display text-sm text-brand">{s.n}</span>
+              <span data-scroll-spin className="inline-block font-display text-sm text-brand">
+                {s.n}
+              </span>
               <h3 className="mt-3 font-display text-lg font-medium">{s.title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-muted">{s.body}</p>
             </KineticReveal>
@@ -151,15 +200,24 @@ function Features() {
       title: "Auto-remediation",
       body: "Critical findings trigger a safe, reversible response automatically — no one has to be watching at 3am.",
     },
+    {
+      title: "Secrets detection",
+      body: "Catches hardcoded API keys and passwords in your code before they leak.",
+    },
+    {
+      title: "Anomaly detection",
+      body: "Flags activity spikes that look more like abuse than real usage.",
+    },
   ];
   return (
     <section className="border-b border-line">
       <div className="mx-auto max-w-6xl px-6 py-20">
-        <div className="grid gap-8 sm:grid-cols-2">
+        <h2 className="font-display text-2xl font-medium">Everything included, even on Free</h2>
+        <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((item, i) => (
             <KineticReveal
               key={item.title}
-              delay={i * 0.08}
+              delay={i * 0.06}
               className="border-l border-line pl-5"
             >
               <h3 className="font-display text-base font-medium">{item.title}</h3>
@@ -172,9 +230,35 @@ function Features() {
   );
 }
 
-function CTA() {
+function PricingTeaser() {
   return (
     <section className="border-b border-line">
+      <div className="mx-auto max-w-6xl px-6 py-20">
+        <div className="flex flex-col items-start justify-between gap-6 rounded-2xl border border-line bg-panel p-8 md:flex-row md:items-center">
+          <div>
+            <h2 className="font-display text-xl font-medium">
+              One flat rate per project — not per developer
+            </h2>
+            <p className="mt-2 max-w-md text-sm text-muted">
+              Free covers real detection and simple automation. Premium adds
+              smart patch suggestions for $9/project/month.
+            </p>
+          </div>
+          <Link
+            href="/pricing"
+            className="rounded-md border border-line px-5 py-3 text-sm font-medium text-text hover:border-brand/40"
+          >
+            See pricing
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function CTA() {
+  return (
+    <section>
       <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 px-6 py-16 md:flex-row md:items-center">
         <h2 className="font-display text-2xl font-medium">
           Start securing your app in minutes.
@@ -190,50 +274,23 @@ function CTA() {
   );
 }
 
-function Footer() {
-  return (
-    <footer>
-      <div className="mx-auto grid max-w-6xl gap-8 px-6 py-16 text-sm sm:grid-cols-3">
-        <div>
-          <p className="font-display text-text">Product</p>
-          <ul className="mt-3 space-y-2 text-muted">
-            <li><Link href="/product" className="hover:text-text">Overview</Link></li>
-            <li><Link href="/pricing" className="hover:text-text">Pricing</Link></li>
-            <li><Link href="/docs" className="hover:text-text">Docs</Link></li>
-          </ul>
-        </div>
-        <div>
-          <p className="font-display text-text">Developers</p>
-          <ul className="mt-3 space-y-2 text-muted">
-            <li><Link href="/docs" className="hover:text-text">API reference</Link></li>
-            <li><Link href="/sdks" className="hover:text-text">SDKs</Link></li>
-          </ul>
-        </div>
-        <div>
-          <p className="font-display text-text">Company</p>
-          <ul className="mt-3 space-y-2 text-muted">
-            <li><Link href="/about" className="hover:text-text">About</Link></li>
-            <li><Link href="/contact" className="hover:text-text">Contact</Link></li>
-          </ul>
-        </div>
-      </div>
-      <div className="border-t border-line px-6 py-6 text-center text-xs text-muted">
-        © 2026 Net Composure.
-      </div>
-    </footer>
-  );
-}
-
 export default function Home() {
   return (
     <main>
       <NavBar />
       <KineticHero />
-      <LiveTerminalSection />
+      <TrustBar />
+      <section className="border-b border-line py-16">
+        <KineticReveal className="px-6">
+          <LiveTerminal />
+        </KineticReveal>
+      </section>
+      <LiveOpsPanel />
       <HowItWorks />
       <Features />
+      <PricingTeaser />
       <CTA />
-      <Footer />
+      <SiteFooter />
     </main>
   );
 }

@@ -3,10 +3,20 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Sparkles, KeyRound, ShieldAlert, Ban } from "lucide-react";
+import {
+  ArrowLeft,
+  Sparkles,
+  KeyRound,
+  Ban,
+  Zap,
+  FileCode2,
+  ScanLine,
+  ShieldCheck,
+} from "lucide-react";
 import { supabase } from "../../../../lib/supabase";
 import GenerateFix from "../../../components/GenerateFix";
-import SecurityScore from "../../../components/SecurityScore";
+import SecurityGauge from "../../../components/SecurityGauge";
+import ThreatActivityChart from "../../../components/ThreatActivityChart";
 
 type Project = {
   id: string;
@@ -50,12 +60,22 @@ function maskKey(key: string): string {
   return `nc_live_${"•".repeat(10)}${key.slice(-4)}`;
 }
 
-const SEVERITY_COLOR: Record<string, string> = {
-  critical: "text-red-400 border-red-400/40",
-  high: "text-orange-400 border-orange-400/40",
-  medium: "text-yellow-400 border-yellow-400/40",
-  low: "text-brand border-brand/40",
-  info: "text-muted border-line",
+function timeAgo(iso: string): string {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
+
+const SEVERITY_BADGE: Record<string, string> = {
+  critical: "bg-red-500/15 text-red-400",
+  high: "bg-orange-500/15 text-orange-400",
+  medium: "bg-yellow-500/15 text-yellow-400",
+  low: "bg-brand/15 text-brand",
+  info: "bg-white/10 text-muted",
 };
 
 export default function ProjectDetailPage() {
@@ -93,7 +113,6 @@ export default function ProjectDetailPage() {
       setLoading(false);
       return;
     }
-
     setProject(projectRow);
 
     const { data: keyRows, error: keyError } = await supabase
@@ -107,7 +126,6 @@ export default function ProjectDetailPage() {
       setLoading(false);
       return;
     }
-
     setKeys(keyRows ?? []);
 
     const { data: findingRows, error: findingError } = await supabase
@@ -121,7 +139,6 @@ export default function ProjectDetailPage() {
       setLoading(false);
       return;
     }
-
     setFindings(findingRows ?? []);
 
     const { data: blockedRows, error: blockedError } = await supabase
@@ -130,9 +147,7 @@ export default function ProjectDetailPage() {
       .eq("project_id", projectId)
       .order("created_at", { ascending: false });
 
-    if (!blockedError) {
-      setBlockedIps(blockedRows ?? []);
-    }
+    if (!blockedError) setBlockedIps(blockedRows ?? []);
 
     setLoading(false);
   }
@@ -141,19 +156,14 @@ export default function ProjectDetailPage() {
     setError(null);
     setGenerating(true);
     const newKey = generateApiKey();
-
-    const { error: insertError } = await supabase.from("api_keys").insert({
-      project_id: projectId,
-      key: newKey,
-    });
-
+    const { error: insertError } = await supabase
+      .from("api_keys")
+      .insert({ project_id: projectId, key: newKey });
     setGenerating(false);
-
     if (insertError) {
       setError(insertError.message);
       return;
     }
-
     setRevealedKey(newKey);
     await loadData();
   }
@@ -164,87 +174,83 @@ export default function ProjectDetailPage() {
       .from("api_keys")
       .update({ revoked: true })
       .eq("id", keyId);
-
     if (updateError) {
       setError(updateError.message);
       return;
     }
-
     await loadData();
   }
 
   async function handleUpgrade() {
     setError(null);
     setUpgrading(true);
-
     const { error: updateError } = await supabase
       .from("projects")
       .update({ plan: "premium" })
       .eq("id", projectId);
-
     setUpgrading(false);
-
     if (updateError) {
       setError(updateError.message);
       return;
     }
-
     await loadData();
   }
 
-  if (loading) {
-    return null;
-  }
+  if (loading) return null;
 
   if (error || !project) {
     return (
       <div className="flex-1 overflow-y-auto px-8 py-10">
-        <Link
-          href="/dashboard"
-          className="flex items-center gap-2 text-sm text-muted hover:text-text"
-        >
+        <Link href="/dashboard" className="flex items-center gap-2 text-sm text-muted hover:text-text">
           <ArrowLeft className="h-4 w-4" />
           Back to overview
         </Link>
-        <p className="mt-6 text-sm text-red-400">
-          {error ?? "Something went wrong."}
-        </p>
+        <p className="mt-6 text-sm text-red-400">{error ?? "Something went wrong."}</p>
       </div>
     );
   }
 
   const isPremium = project.plan === "premium";
+  const openFindings = findings.filter((f) => f.status === "open" || !f.status);
+  const severityCounts = { critical: 0, high: 0, medium: 0, low: 0 };
+  openFindings.forEach((f) => {
+    if (f.severity in severityCounts) {
+      severityCounts[f.severity as keyof typeof severityCounts] += 1;
+    }
+  });
+  const activeKeys = keys.filter((k) => !k.revoked);
 
   return (
-    <div className="flex-1 overflow-y-auto px-8 py-10">
-      <div className="mx-auto max-w-4xl">
-        <Link
-          href="/dashboard"
-          className="flex items-center gap-2 text-sm text-muted hover:text-text"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to overview
-        </Link>
+    <div className="flex-1 overflow-y-auto">
+      <div className="flex items-center justify-between border-b border-line px-8 py-3">
+        <div className="flex items-center gap-3">
+          <Link href="/dashboard" className="text-muted hover:text-text">
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
+          <span className="font-display text-sm font-medium">{project.name}</span>
+          <span
+            className={`rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wide ${
+              isPremium ? "border-brand/40 text-brand" : "border-line text-muted"
+            }`}
+          >
+            {isPremium ? "Premium" : "Free"}
+          </span>
+        </div>
+        <div className="flex items-center gap-2 text-xs text-muted">
+          <span className="h-1.5 w-1.5 rounded-full bg-brand" />
+          All systems operational
+        </div>
+      </div>
 
-        <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="px-8 py-8">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="font-display text-2xl font-medium">{project.name}</h1>
-              <span
-                className={`rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wide ${
-                  isPremium
-                    ? "border-brand/40 text-brand"
-                    : "border-line text-muted"
-                }`}
-              >
-                {isPremium ? "Premium" : "Free"}
-              </span>
-            </div>
+            <h1 className="font-display text-2xl font-medium">Welcome back</h1>
             <p className="mt-1 text-sm text-muted">
-              Created {new Date(project.created_at).toLocaleDateString()}
+              Here&apos;s what&apos;s happening with {project.name} today.
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="mt-3 flex gap-3 sm:mt-0">
             {!isPremium && (
               <button
                 onClick={handleUpgrade}
@@ -265,168 +271,250 @@ export default function ProjectDetailPage() {
           </div>
         </div>
 
-        {!isPremium && (
-          <p className="mt-2 text-xs text-muted">
-            This upgrade button is a live preview — payments aren&apos;t
-            connected yet, but the plan change is real and unlocks Premium
-            detection features immediately.
-          </p>
-        )}
-
-        <div className="mt-6">
-          <SecurityScore findings={findings} />
-        </div>
-
         {revealedKey && (
-          <div className="mt-6 rounded-md border border-brand/40 bg-ink px-4 py-3">
-            <p className="text-xs text-brand">
-              Copy this now — you won&apos;t see the full key again.
-            </p>
-            <p className="mt-1 select-all break-all font-mono text-sm">
-              {revealedKey}
-            </p>
+          <div className="mt-4 rounded-md border border-brand/40 bg-panel px-4 py-3">
+            <p className="text-xs text-brand">Copy this now — you won&apos;t see the full key again.</p>
+            <p className="mt-1 select-all break-all font-mono text-sm">{revealedKey}</p>
           </div>
         )}
 
-        <div className="mt-10 grid gap-6 lg:grid-cols-2">
-          <section className="rounded-2xl border border-line bg-panel p-6">
-            <div className="flex items-center gap-2">
-              <KeyRound className="h-4 w-4 text-muted" />
-              <h2 className="font-display text-base font-medium">API keys</h2>
-            </div>
-            {keys.length === 0 && (
-              <p className="mt-3 text-sm text-muted">
-                No keys yet — generate one above to start sending events.
-              </p>
-            )}
-            <ul className="mt-4 flex flex-col gap-3">
-              {keys.map((k) => (
-                <li
-                  key={k.id}
-                  className="flex items-center justify-between rounded-md border border-line px-4 py-3"
-                >
-                  <div>
-                    <p className="font-mono text-sm">{maskKey(k.key)}</p>
-                    <p className="mt-1 text-xs text-muted">
-                      Created {new Date(k.created_at).toLocaleDateString()}
-                      {k.revoked && (
-                        <span className="ml-2 text-red-400">Revoked</span>
-                      )}
-                    </p>
-                  </div>
-                  {!k.revoked && (
-                    <button
-                      onClick={() => handleRevokeKey(k.id)}
-                      className="rounded-md border border-line px-3 py-1.5 text-xs text-red-400 hover:border-red-400"
-                    >
-                      Revoke
-                    </button>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </section>
+        <div className="mt-6 grid gap-5 lg:grid-cols-3">
+          <SecurityGauge findings={findings} />
+          <div className="lg:col-span-2">
+            <ThreatActivityChart findings={findings} blockedIps={blockedIps} />
+          </div>
+        </div>
 
-          <section className="rounded-2xl border border-line bg-panel p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Ban className="h-4 w-4 text-muted" />
-                <h2 className="font-display text-base font-medium">
-                  Active Defense
-                </h2>
+        <div className="mt-5 rounded-2xl border border-line bg-panel p-6">
+          <h2 className="font-display text-base font-medium">Security Overview</h2>
+          <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <div>
+              <div className="flex items-center gap-1.5 text-xs text-muted">
+                <span className="h-2 w-2 rounded-full bg-red-400" /> Critical
               </div>
-              <span className="rounded-full border border-brand/40 px-3 py-1 text-xs text-brand">
-                {blockedIps.length} blocked
-              </span>
+              <p className="mt-1 font-display text-xl font-medium">{severityCounts.critical}</p>
             </div>
-            <p className="mt-1 text-sm text-muted">
-              IPs automatically blocked after matching an attack pattern or
-              repeated failed logins.
-            </p>
+            <div>
+              <div className="flex items-center gap-1.5 text-xs text-muted">
+                <span className="h-2 w-2 rounded-full bg-orange-400" /> High
+              </div>
+              <p className="mt-1 font-display text-xl font-medium">{severityCounts.high}</p>
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5 text-xs text-muted">
+                <span className="h-2 w-2 rounded-full bg-yellow-400" /> Medium
+              </div>
+              <p className="mt-1 font-display text-xl font-medium">{severityCounts.medium}</p>
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5 text-xs text-muted">
+                <span className="h-2 w-2 rounded-full bg-brand" /> Blocked IPs
+              </div>
+              <p className="mt-1 font-display text-xl font-medium">{blockedIps.length}</p>
+            </div>
+          </div>
+        </div>
 
-            <div className="mt-4 flex items-center justify-between rounded-md border border-dashed border-line px-4 py-3">
-              <div className="flex items-center gap-2 text-sm text-muted">
-                <Sparkles className="h-4 w-4" />
-                Smart auto-patch suggestions
+        <div className="mt-5 grid gap-5 lg:grid-cols-3">
+          <div className="rounded-2xl border border-line bg-panel p-6 lg:col-span-2">
+            <div className="flex items-center justify-between">
+              <h2 className="font-display text-base font-medium">Recent Findings</h2>
+              <span className="text-xs text-muted">{findings.length} total</span>
+            </div>
+            {findings.length === 0 ? (
+              <p className="mt-4 text-sm text-muted">
+                No findings yet — connect your API key and run a scan to see results here.
+              </p>
+            ) : (
+              <ul className="mt-4 flex flex-col gap-2">
+                {findings.slice(0, 8).map((f) => (
+                  <li
+                    key={f.id}
+                    className="flex flex-col gap-2 rounded-md border border-line px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[10px] font-medium uppercase ${
+                          SEVERITY_BADGE[f.severity] ?? SEVERITY_BADGE.info
+                        }`}
+                      >
+                        {f.severity}
+                      </span>
+                      <span className="text-sm">{f.title}</span>
+                    </div>
+                    <span className="text-xs text-muted">{timeAgo(f.created_at)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {findings.some(
+              (f) => f.title.startsWith("Premium: Smart patch suggestion") && f.detail
+            ) && (
+              <div className="mt-4 border-t border-line pt-4">
+                {findings
+                  .filter(
+                    (f) =>
+                      f.title.startsWith("Premium: Smart patch suggestion") && f.detail
+                  )
+                  .slice(0, 1)
+                  .map((f) => <GenerateFix key={f.id} detail={f.detail as string} />)}
+              </div>
+            )}
+          </div>
+
+          <div className="rounded-2xl border border-line bg-panel p-6">
+            <div className="flex items-center gap-2">
+              <Ban className="h-4 w-4 text-muted" />
+              <h2 className="font-display text-base font-medium">Active Defense</h2>
+            </div>
+            <p className="mt-1 text-xs text-muted">
+              {blockedIps.length} IP{blockedIps.length === 1 ? "" : "s"} blocked automatically.
+            </p>
+            {blockedIps.length === 0 ? (
+              <p className="mt-4 text-sm text-muted">No blocked IPs yet.</p>
+            ) : (
+              <ul className="mt-4 flex flex-col gap-2">
+                {blockedIps.slice(0, 6).map((b) => (
+                  <li key={b.id} className="flex items-center justify-between text-xs">
+                    <span className="font-mono text-text">{b.ip}</span>
+                    <span className="text-muted">{timeAgo(b.created_at)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="mt-4 flex items-center justify-between rounded-md border border-dashed border-line px-3 py-2.5">
+              <div className="flex items-center gap-2 text-xs text-muted">
+                <Sparkles className="h-3.5 w-3.5" />
+                Smart auto-patch
               </div>
               <span
-                className={`rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wide ${
-                  isPremium
-                    ? "border-brand/40 text-brand"
-                    : "border-line text-muted"
+                className={`rounded-full border px-2 py-0.5 text-[10px] uppercase ${
+                  isPremium ? "border-brand/40 text-brand" : "border-line text-muted"
                 }`}
               >
                 {isPremium ? "Active" : "Premium"}
               </span>
             </div>
-
-            {blockedIps.length === 0 && (
-              <p className="mt-4 text-sm text-muted">
-                No blocked IPs yet — this fills in automatically as your app
-                sends requests through Net Composure.
-              </p>
-            )}
-
-            <ul className="mt-4 flex flex-col gap-2">
-              {blockedIps.map((b) => (
-                <li
-                  key={b.id}
-                  className="flex items-center justify-between rounded-md border border-line px-4 py-3"
-                >
-                  <div>
-                    <p className="font-mono text-sm">{b.ip}</p>
-                    {b.reason && (
-                      <p className="mt-1 text-xs text-muted">{b.reason}</p>
-                    )}
-                  </div>
-                  <span className="text-xs text-muted">
-                    {new Date(b.created_at).toLocaleString()}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </section>
+          </div>
         </div>
 
-        <section className="mt-6 rounded-2xl border border-line bg-panel p-6">
-          <div className="flex items-center gap-2">
-            <ShieldAlert className="h-4 w-4 text-muted" />
-            <h2 className="font-display text-base font-medium">Findings</h2>
+        <div className="mt-5 grid gap-5 lg:grid-cols-3">
+          <div className="rounded-2xl border border-line bg-panel p-6 lg:col-span-2">
+            <div className="flex items-center gap-2">
+              <KeyRound className="h-4 w-4 text-muted" />
+              <h2 className="font-display text-base font-medium">API Keys</h2>
+            </div>
+            {keys.length === 0 ? (
+              <p className="mt-4 text-sm text-muted">No keys yet — generate one above.</p>
+            ) : (
+              <ul className="mt-4 flex flex-col gap-2">
+                {keys.map((k) => (
+                  <li
+                    key={k.id}
+                    className="flex items-center justify-between rounded-md border border-line px-4 py-3"
+                  >
+                    <div>
+                      <p className="font-mono text-sm">{maskKey(k.key)}</p>
+                      <p className="mt-1 text-xs text-muted">
+                        Created {new Date(k.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    {k.revoked ? (
+                      <span className="text-xs text-red-400">Revoked</span>
+                    ) : (
+                      <button
+                        onClick={() => handleRevokeKey(k.id)}
+                        className="rounded-md border border-line px-3 py-1.5 text-xs text-red-400 hover:border-red-400"
+                      >
+                        Revoke
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
-          {findings.length === 0 && (
-            <p className="mt-3 text-sm text-muted">
-              No findings yet — this project&apos;s security scans will
-              appear here once you send events using your API key.
-            </p>
-          )}
-
-          <ul className="mt-4 flex flex-col gap-3">
-            {findings.map((f) => (
-              <li
-                key={f.id}
-                className={`rounded-md border px-4 py-3 ${
-                  SEVERITY_COLOR[f.severity] ?? "border-line"
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-text">{f.title}</p>
-                  <span className="text-xs uppercase tracking-wide">
-                    {f.severity}
+          <div className="flex flex-col gap-5">
+            <div className="rounded-2xl border border-line bg-panel p-6">
+              <div className="flex items-center gap-2">
+                <Zap className="h-4 w-4 text-muted" />
+                <h2 className="font-display text-base font-medium">Quick Actions</h2>
+              </div>
+              <div className="mt-4 flex flex-col gap-2">
+                <button
+                  onClick={handleGenerateKey}
+                  className="flex items-center justify-between rounded-md border border-line px-3 py-2.5 text-left text-sm hover:border-brand/40"
+                >
+                  <span className="flex items-center gap-2">
+                    <KeyRound className="h-4 w-4 text-muted" />
+                    Generate API key
                   </span>
+                </button>
+                <Link
+                  href="/sdks"
+                  className="flex items-center justify-between rounded-md border border-line px-3 py-2.5 text-left text-sm hover:border-brand/40"
+                >
+                  <span className="flex items-center gap-2">
+                    <FileCode2 className="h-4 w-4 text-muted" />
+                    Connect SDK
+                  </span>
+                </Link>
+                <Link
+                  href="/docs"
+                  className="flex items-center justify-between rounded-md border border-line px-3 py-2.5 text-left text-sm hover:border-brand/40"
+                >
+                  <span className="flex items-center gap-2">
+                    <ScanLine className="h-4 w-4 text-muted" />
+                    View integration guide
+                  </span>
+                </Link>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-line bg-panel p-6">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-brand" />
+                <h2 className="font-display text-base font-medium">Protection Status</h2>
+              </div>
+              <ul className="mt-4 flex flex-col gap-2 text-sm">
+                {[
+                  "Malware scanning",
+                  "Dependency scanning",
+                  "Request firewall",
+                  "Brute-force defense",
+                ].map((label) => (
+                  <li key={label} className="flex items-center justify-between">
+                    <span className="text-muted">{label}</span>
+                    <span className="text-xs text-brand">Active</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {!isPremium && (
+              <div className="rounded-2xl border border-brand/40 bg-panel p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-brand" />
+                    <h2 className="font-display text-base font-medium">
+                      Smart Patch Suggestions
+                    </h2>
+                  </div>
                 </div>
-                {f.detail && (
-                  <p className="mt-1 text-xs text-muted">{f.detail}</p>
-                )}
-                {f.title.startsWith("Premium: Smart patch suggestion") &&
-                  f.detail && <GenerateFix detail={f.detail} />}
-                <p className="mt-2 text-xs text-muted">
-                  {new Date(f.created_at).toLocaleString()}
+                <p className="mt-2 text-sm text-muted">
+                  Get exact upgrade commands to fix vulnerabilities automatically.
                 </p>
-              </li>
-            ))}
-          </ul>
-        </section>
+                <button
+                  onClick={handleUpgrade}
+                  className="mt-3 text-sm text-brand hover:underline"
+                >
+                  Upgrade to unlock →
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

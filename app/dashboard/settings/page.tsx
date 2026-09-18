@@ -21,7 +21,7 @@ export default function SettingsPage() {
     : null;
 
   return (
-    <div>
+    <div className="flex-1 overflow-y-auto px-8 py-8">
       <h1 className="font-display text-2xl font-medium">Settings</h1>
       <p className="mt-1 text-sm text-muted">Your account details.</p>
 
