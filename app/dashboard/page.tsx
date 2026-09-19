@@ -117,7 +117,13 @@ function DashboardContent() {
     }
 
     setProjects(rows ?? []);
-    if (!rows || rows.length === 0) return;
+    if (!rows || rows.length === 0) {
+      setProject(null);
+      setKeys([]);
+      setFindings([]);
+      setBlockedIps([]);
+      return;
+    }
 
     const fromUrl = searchParams.get("project");
     const found = rows.find((p) => p.id === fromUrl);
@@ -188,6 +194,39 @@ function DashboardContent() {
     setUpgrading(true);
     await supabase.from("projects").update({ plan: "premium" }).eq("id", project.id);
     setUpgrading(false);
+    await loadProjects();
+  }
+
+  async function handleDeleteProject() {
+    if (!project) return;
+    if (!window.confirm(`Delete "${project.name}"? This permanently removes it and all its data.`)) {
+      return;
+    }
+
+    setError(null);
+    const { error: deleteError } = await supabase
+      .from("projects")
+      .delete()
+      .eq("id", project.id);
+    if (deleteError) {
+      setError(deleteError.message);
+      return;
+    }
+
+    await loadProjects();
+  }
+
+  async function handleStackChange(newStack: string) {
+    if (!project) return;
+    const { error: updateError } = await supabase
+      .from("projects")
+      .update({ stack: newStack || null })
+      .eq("id", project.id);
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
+
     await loadProjects();
   }
 
@@ -277,7 +316,18 @@ function DashboardContent() {
             <ConnectionStatus projectId={project.id} />
           </div>
         </div>
-        <div className="mt-3 flex gap-3 sm:mt-0">
+        <div className="mt-3 flex flex-wrap gap-3 sm:mt-0">
+          <ConnectPanel
+            apiKey={keys.find((k) => !k.revoked)?.key ?? null}
+            stack={project.stack}
+            onStackChange={handleStackChange}
+          />
+          <button
+            onClick={handleDeleteProject}
+            className="flex items-center gap-1.5 rounded-md border border-line px-3 py-2 text-xs text-red-400 hover:border-red-400"
+          >
+            Delete project
+          </button>
           <button
             onClick={() => setShowCreate(true)}
             className="flex items-center gap-1.5 rounded-md border border-line px-3 py-2 text-xs text-muted hover:border-white/20"
@@ -316,13 +366,6 @@ function DashboardContent() {
           {error}
         </p>
       )}
-
-      <div className="mt-6">
-        <ConnectPanel
-          apiKey={keys.find((k) => !k.revoked)?.key ?? null}
-          stack={project.stack}
-        />
-      </div>
 
       {revealedKey && (
         <div className="mt-4 rounded-md border border-brand/40 bg-panel px-4 py-3">
