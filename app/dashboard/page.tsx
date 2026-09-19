@@ -17,6 +17,7 @@ import { supabase } from "../../lib/supabase";
 import GenerateFix from "../components/GenerateFix";
 import SecurityGauge from "../components/SecurityGauge";
 import ConnectionStatus from "../components/ConnectionStatus";
+import ConnectPanel from "../components/ConnectPanel";
 import ThreatActivityChart from "../components/ThreatActivityChart";
 
 type Project = { id: string; name: string; created_at: string; plan: string };
@@ -226,6 +227,7 @@ function DashboardContent() {
   }
 
   const isPremium = project.plan === "premium";
+  const hasActiveKey = keys.some((k) => !k.revoked);
   const openFindings = findings.filter((f) => f.status === "open" || !f.status);
   const severityCounts = { critical: 0, high: 0, medium: 0, low: 0 };
   openFindings.forEach((f) => {
@@ -266,12 +268,16 @@ function DashboardContent() {
           )}
           <button
             onClick={handleGenerateKey}
-            disabled={generating}
+            disabled={generating || hasActiveKey}
             className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-ink hover:bg-brand-dim disabled:opacity-60"
           >
             {generating ? "Generating..." : "Generate API key"}
           </button>
         </div>
+      </div>
+
+      <div className="mt-6">
+        <ConnectPanel apiKey={keys.find((k) => !k.revoked)?.key ?? null} />
       </div>
 
       {revealedKey && (
@@ -448,6 +454,7 @@ function DashboardContent() {
             <div className="mt-4 flex flex-col gap-2">
               <button
                 onClick={handleGenerateKey}
+                disabled={generating || hasActiveKey}
                 className="flex items-center gap-2 rounded-md border border-line px-3 py-2.5 text-left text-sm hover:border-brand/40"
               >
                 <KeyRound className="h-4 w-4 text-muted" />
