@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { startTransition, useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -19,8 +19,15 @@ import SecurityGauge from "../components/SecurityGauge";
 import ConnectionStatus from "../components/ConnectionStatus";
 import ConnectPanel from "../components/ConnectPanel";
 import ThreatActivityChart from "../components/ThreatActivityChart";
+import { TECH_STACKS } from "../lib/techStacks";
 
-type Project = { id: string; name: string; created_at: string; plan: string };
+type Project = {
+  id: string;
+  name: string;
+  created_at: string;
+  plan: string;
+  stack: string | null;
+};
 type ApiKey = {
   id: string;
   project_id: string;
@@ -83,6 +90,7 @@ function DashboardContent() {
   const [error, setError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
+  const [stack, setStack] = useState("");
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
@@ -100,7 +108,7 @@ function DashboardContent() {
   async function loadProjects() {
     const { data: rows, error: projectError } = await supabase
       .from("projects")
-      .select("id, name, created_at, plan")
+      .select("id, name, created_at, plan, stack")
       .order("created_at", { ascending: false });
 
     if (projectError) {
@@ -146,7 +154,7 @@ function DashboardContent() {
     if (!paramId || !projects.length) return;
     const found = projects.find((p) => p.id === paramId);
     if (found && found.id !== project?.id) {
-      setProject(found);
+      startTransition(() => setProject(found));
       loadProjectData(found.id);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -190,9 +198,14 @@ function DashboardContent() {
     const { data: userData } = await supabase.auth.getUser();
     await supabase
       .from("projects")
-      .insert({ name: newProjectName.trim(), owner: userData.user?.id });
+      .insert({
+        name: newProjectName.trim(),
+        owner: userData.user?.id,
+        stack: stack || null,
+      });
     setCreating(false);
     setNewProjectName("");
+    setStack("");
     setShowCreate(false);
     await loadProjects();
   }
@@ -214,6 +227,22 @@ function DashboardContent() {
             onChange={(e) => setNewProjectName(e.target.value)}
             className="flex-1 rounded-md border border-line bg-panel px-3 py-2.5 text-sm outline-none focus:border-brand"
           />
+          <select
+            value={stack}
+            onChange={(e) => setStack(e.target.value)}
+            className="rounded-md border border-line bg-panel px-3 py-2.5 text-sm outline-none focus:border-brand"
+          >
+            <option value="">Select your language / framework</option>
+            {Array.from(new Set(TECH_STACKS.map((option) => option.group))).map((group) => (
+              <optgroup key={group} label={group}>
+                {TECH_STACKS.filter((option) => option.group === group).map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
           <button
             type="submit"
             disabled={creating}
@@ -276,8 +305,23 @@ function DashboardContent() {
         </div>
       </div>
 
+      {hasActiveKey && (
+        <p className="mt-2 text-xs text-muted">
+          This project already has an active key. Revoke it below before generating a new one.
+        </p>
+      )}
+
+      {error && (
+        <p className="mt-4 rounded-md border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-400">
+          {error}
+        </p>
+      )}
+
       <div className="mt-6">
-        <ConnectPanel apiKey={keys.find((k) => !k.revoked)?.key ?? null} />
+        <ConnectPanel
+          apiKey={keys.find((k) => !k.revoked)?.key ?? null}
+          stack={project.stack}
+        />
       </div>
 
       {revealedKey && (
@@ -509,6 +553,22 @@ function DashboardContent() {
                 onChange={(e) => setNewProjectName(e.target.value)}
                 className="rounded-md border border-line bg-ink px-3 py-2.5 text-sm outline-none focus:border-brand"
               />
+              <select
+                value={stack}
+                onChange={(e) => setStack(e.target.value)}
+                className="rounded-md border border-line bg-ink px-3 py-2.5 text-sm outline-none focus:border-brand"
+              >
+                <option value="">Select your language / framework</option>
+                {Array.from(new Set(TECH_STACKS.map((option) => option.group))).map((group) => (
+                  <optgroup key={group} label={group}>
+                    {TECH_STACKS.filter((option) => option.group === group).map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
               <div className="flex gap-2">
                 <button
                   type="button"
