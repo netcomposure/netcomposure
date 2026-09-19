@@ -281,7 +281,11 @@ export default function ProjectDetailPage() {
         <div className="mt-6 grid gap-5 lg:grid-cols-3">
           <SecurityGauge findings={findings} />
           <div className="lg:col-span-2">
-            <ThreatActivityChart findings={findings} blockedIps={blockedIps} />
+            <ThreatActivityChart
+              projectId={projectId}
+              findings={findings}
+              blockedIps={blockedIps}
+            />
           </div>
         </div>
 

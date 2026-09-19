@@ -284,7 +284,11 @@ function DashboardContent() {
       <div id="activity" className="mt-6 grid gap-5 lg:grid-cols-3">
         <SecurityGauge findings={findings} />
         <div className="lg:col-span-2">
-          <ThreatActivityChart projectId={project.id} />
+          <ThreatActivityChart
+            projectId={project.id}
+            findings={findings}
+            blockedIps={blockedIps}
+          />
         </div>
       </div>
 

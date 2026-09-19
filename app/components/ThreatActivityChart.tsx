@@ -12,7 +12,19 @@ const RANGES: { key: RangeKey; label: string; ms: number; buckets: number }[] = 
   { key: "30D", label: "30D", ms: 30 * 24 * 60 * 60 * 1000, buckets: 30 },
 ];
 
-export default function ThreatActivityChart({ projectId }: { projectId: string }) {
+type ActivityEvent = { created_at: string };
+
+type ThreatActivityChartProps = {
+  projectId: string;
+  findings: ActivityEvent[];
+  blockedIps: ActivityEvent[];
+};
+
+export default function ThreatActivityChart({
+  projectId,
+  findings,
+  blockedIps,
+}: ThreatActivityChartProps) {
   const [range, setRange] = useState<RangeKey>("24H");
   const [points, setPoints] = useState<number[]>([]);
   const [pulse, setPulse] = useState(false);
@@ -25,16 +37,16 @@ export default function ThreatActivityChart({ projectId }: { projectId: string }
       const cfg = RANGES.find((r) => r.key === range)!;
       const since = new Date(Date.now() - cfg.ms).toISOString();
 
-      const [activity, findings, blocked] = await Promise.all([
-        supabase.from("api_activity").select("created_at").eq("project_id", projectId).gte("created_at", since),
-        supabase.from("findings").select("created_at").eq("project_id", projectId).gte("created_at", since),
-        supabase.from("blocked_ips").select("created_at").eq("project_id", projectId).gte("created_at", since),
-      ]);
+      const { data: activityRows } = await supabase
+        .from("api_activity")
+        .select("created_at")
+        .eq("project_id", projectId)
+        .gte("created_at", since);
 
       const events = [
-        ...(activity.data ?? []),
-        ...(findings.data ?? []),
-        ...(blocked.data ?? []),
+        ...(activityRows ?? []),
+        ...findings.filter((event) => event.created_at >= since),
+        ...blockedIps.filter((event) => event.created_at >= since),
       ];
 
       const bucketMs = cfg.ms / cfg.buckets;
@@ -62,7 +74,7 @@ export default function ThreatActivityChart({ projectId }: { projectId: string }
       clearInterval(interval);
       clearInterval(pulseInterval);
     };
-  }, [range, projectId]);
+  }, [blockedIps, findings, range, projectId]);
 
   const max = Math.max(1, ...points);
   const width = 560;
