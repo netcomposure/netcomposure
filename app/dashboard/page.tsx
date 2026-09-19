@@ -16,6 +16,7 @@ import {
 import { supabase } from "../../lib/supabase";
 import GenerateFix from "../components/GenerateFix";
 import SecurityGauge from "../components/SecurityGauge";
+import ConnectionStatus from "../components/ConnectionStatus";
 import ThreatActivityChart from "../components/ThreatActivityChart";
 
 type Project = { id: string; name: string; created_at: string; plan: string };
@@ -241,6 +242,9 @@ function DashboardContent() {
           <p className="mt-1 text-sm text-muted">
             Here&apos;s what&apos;s happening with {project.name} today.
           </p>
+          <div className="mt-2">
+            <ConnectionStatus projectId={project.id} />
+          </div>
         </div>
         <div className="mt-3 flex gap-3 sm:mt-0">
           <button
@@ -280,7 +284,7 @@ function DashboardContent() {
       <div id="activity" className="mt-6 grid gap-5 lg:grid-cols-3">
         <SecurityGauge findings={findings} />
         <div className="lg:col-span-2">
-          <ThreatActivityChart findings={findings} blockedIps={blockedIps} />
+          <ThreatActivityChart projectId={project.id} />
         </div>
       </div>
 
