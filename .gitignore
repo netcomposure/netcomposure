@@ -33,6 +33,9 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# personalized SDK downloads contain project API keys
+/netcomposure.js
+
 # vercel
 .vercel
 

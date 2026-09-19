@@ -12,6 +12,7 @@ import {
   ScanLine,
   ShieldCheck,
   Plus,
+  Download,
 } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import GenerateFix from "../components/GenerateFix";
@@ -19,6 +20,7 @@ import SecurityGauge from "../components/SecurityGauge";
 import ConnectionStatus from "../components/ConnectionStatus";
 import ConnectPanel from "../components/ConnectPanel";
 import ThreatActivityChart from "../components/ThreatActivityChart";
+import { generateSdkFile } from "../lib/generateSdk";
 import { TECH_STACKS } from "../lib/techStacks";
 
 type Project = {
@@ -216,18 +218,18 @@ function DashboardContent() {
     await loadProjects();
   }
 
-  async function handleStackChange(newStack: string) {
-    if (!project) return;
-    const { error: updateError } = await supabase
-      .from("projects")
-      .update({ stack: newStack || null })
-      .eq("id", project.id);
-    if (updateError) {
-      setError(updateError.message);
-      return;
-    }
+  function handleDownloadSdk() {
+    const activeKey = keys.find((key) => !key.revoked)?.key;
+    if (!activeKey) return;
 
-    await loadProjects();
+    const content = generateSdkFile(activeKey, "https://netcomposure-engine.onrender.com");
+    const blob = new Blob([content], { type: "text/javascript" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "netcomposure.js";
+    anchor.click();
+    URL.revokeObjectURL(url);
   }
 
   async function handleCreateProject(e: React.FormEvent) {
@@ -317,10 +319,16 @@ function DashboardContent() {
           </div>
         </div>
         <div className="mt-3 flex flex-wrap gap-3 sm:mt-0">
+          <button
+            onClick={handleDownloadSdk}
+            disabled={!hasActiveKey}
+            className="flex items-center gap-1.5 rounded-md border border-brand/40 px-3 py-2 text-xs text-brand hover:bg-brand/10 disabled:opacity-40"
+          >
+            <Download className="h-3.5 w-3.5" />
+            Download SDK
+          </button>
           <ConnectPanel
-            apiKey={keys.find((k) => !k.revoked)?.key ?? null}
-            stack={project.stack}
-            onStackChange={handleStackChange}
+            hasKey={hasActiveKey}
           />
           <button
             onClick={handleDeleteProject}
