@@ -93,6 +93,8 @@ function DashboardContent() {
   const [showCreate, setShowCreate] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
   const [stack, setStack] = useState("");
+  const [depName, setDepName] = useState("");
+  const [depVersion, setDepVersion] = useState("");
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
@@ -183,6 +185,26 @@ function DashboardContent() {
     }
     setRevealedKey(newKey);
     await loadProjectData(project.id);
+  }
+
+  async function handleTrackDependency(e: React.FormEvent) {
+    e.preventDefault();
+    if (!project || !depName.trim() || !depVersion.trim()) return;
+
+    const { error: dependencyError } = await supabase
+      .from("tracked_dependencies")
+      .insert({
+        project_id: project.id,
+        name: depName.trim(),
+        version: depVersion.trim(),
+      });
+    if (dependencyError) {
+      setError(dependencyError.message);
+      return;
+    }
+
+    setDepName("");
+    setDepVersion("");
   }
 
   async function handleRevokeKey(keyId: string) {
@@ -509,6 +531,31 @@ function DashboardContent() {
             <KeyRound className="h-4 w-4 text-muted" />
             <h2 className="font-display text-base font-medium">API Keys</h2>
           </div>
+          <form
+            onSubmit={handleTrackDependency}
+            className="mt-4 flex gap-2 border-b border-line pb-4"
+          >
+            <input
+              type="text"
+              placeholder="Package (e.g. lodash)"
+              value={depName}
+              onChange={(e) => setDepName(e.target.value)}
+              className="flex-1 rounded-md border border-line bg-ink px-2 py-1.5 text-xs outline-none focus:border-brand"
+            />
+            <input
+              type="text"
+              placeholder="Version"
+              value={depVersion}
+              onChange={(e) => setDepVersion(e.target.value)}
+              className="w-24 rounded-md border border-line bg-ink px-2 py-1.5 text-xs outline-none focus:border-brand"
+            />
+            <button
+              type="submit"
+              className="rounded-md bg-brand px-3 py-1.5 text-xs font-medium text-ink hover:bg-brand-dim"
+            >
+              Track
+            </button>
+          </form>
           {keys.length === 0 ? (
             <p className="mt-4 text-sm text-muted">No keys yet — generate one above.</p>
           ) : (
